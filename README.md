@@ -5,8 +5,8 @@
 
 | Name | Description     | Use                                                          | Author |
 | ---- | --------------- | ------------------------------------------------------------ | ------ |
-| sdb  | 简易传输工具    | [sdb](https://github.com/ForeverFriends/EasyTools.git)       | unknow |
-| dlt  | dlt文件转换工具 | [dltconvert](https://github.com/ForeverFriends/EasyTools.git) | gxx    |
+| sdb  | 简易传输工具    | sdb       | unknow |
+| dlt  | dlt文件转换工具 | dltconvert | gxx    |
 
 
 
