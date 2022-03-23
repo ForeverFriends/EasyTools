@@ -1,0 +1,27 @@
+#!/usr/bin/expect
+
+set timeout 1
+
+set sPath [lindex $argv 0]
+set sFile [lindex $argv 1]
+spawn scp -r $sPath developer@192.168.100.100:/data/developer/
+
+spawn ssh 192.168.100.100 -l developer
+
+expect {
+"yes/no" { send "yes\r"; exp_continue}
+"password:" { send "system\r" }
+}
+
+expect "~$*"
+
+send  "su root\r"
+
+expect "password:"
+
+send "system\r"
+
+send "mount -o remount, rw / \r"
+send "rpm -vih --force --nodeps /data/developer/$sFile \r"
+
+interact

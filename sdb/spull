@@ -1,0 +1,16 @@
+#!/usr/bin/expect
+
+set timeout 1
+
+set sPath [lindex $argv 0]
+
+spawn scp -r developer@192.168.100.100:$sPath .
+
+expect {
+"yes/no" { send "yes\r"; exp_continue}
+"password:" { send "system\r" }
+"Password:" { send "system\r" }
+}
+
+
+interact

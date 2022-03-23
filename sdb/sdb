@@ -1,0 +1,16 @@
+#! /bin/bash
+ssh-keygen -f "/home/$USER/.ssh/known_hosts" -R 192.168.100.100
+if [ $# = 0 ]; then 
+    sshell
+elif [ $1 = "pull" ]; then
+    spull $2
+elif [ $1 = "push" ]; then
+    spush $@
+elif [ $1 = "install" ]; then
+    FILENAME=${2##*/}
+    sinstall $2 $FILENAME
+elif [ $1 = "inrpm" ]; then
+    inrpm $2
+else
+    sshell
+fi
