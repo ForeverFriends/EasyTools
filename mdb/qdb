@@ -1,0 +1,12 @@
+#! /bin/bash
+if [ $# = 0 ]; then 
+    qshell
+elif [ $1 = "pull" ]; then
+    qpull $@
+elif [ $1 = "push" ]; then
+    qpush $@
+elif [ $1 = "log" ]; then
+    qlog $@
+else
+    qcmd $@
+fi

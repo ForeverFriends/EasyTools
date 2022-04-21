@@ -1,0 +1,57 @@
+#!/usr/bin/expect
+
+set timeout 3000
+
+set file_num [expr $argc-1]
+set qpath [lindex $argv $file_num]
+
+spawn adb wait-for-device
+expect {
+"?C" {exit 0}
+}
+
+spawn adb root
+
+for {set i 1} {$i < $argc} {incr i} {
+    set path [lindex $argv $i]
+    spawn adb push $path /data
+}
+
+waitdevice
+
+spawn adb shell
+
+sleep 1
+
+for {set i 1} {$i < $file_num} {incr i} {
+    set path [lindex $argv $i]
+    set f [file tail $path]
+    expect "#"
+    send "cp /data/$f /ota/\r"
+    
+    expect "#"
+    send "rm /data/$f \r"
+}
+
+expect {
+"#" {
+        send "telnet cdc-qnx\r"
+        exp_continue
+    }
+"login:" {
+        send "root\r"
+    }
+}
+
+sleep 1
+
+for {set i 1} {$i < $file_num} {incr i} {
+    set path [lindex $argv $i]
+    set f [file tail $path]
+    send "cp /ota/android/$f $qpath/$f\r"
+    send "rm /ota/android/$f \r"
+}
+
+send "cd $qpath\r"
+
+interact

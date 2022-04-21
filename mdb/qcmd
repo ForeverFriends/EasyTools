@@ -1,0 +1,47 @@
+#!/usr/bin/expect
+
+set cmd [lindex $argv 0]
+set fastboot "fastboot"
+set qfile "9008"
+set reset "reset"
+set screen "screen"
+
+puts "=== $cmd ==="
+
+set timeout 300
+
+spawn adb wait-for-device
+expect {
+"?C" {exit 0}
+}
+
+spawn adb root
+spawn adb shell
+
+expect {
+"error:" {exit 0}
+"?C" { exit 0}
+"#" { 
+        send "telnet cdc-qnx\r";
+        exp_continue
+    }
+
+"login:" {send "root\r"}
+}
+
+expect "Logging" {
+    sleep 1
+    if {[string compare $cmd $fastboot] == 0} {
+        send "reset -f\r"
+    } elseif {[string compare $cmd $qfile] == 0} {
+        send "enter_9008_mode.sh\r"
+    } elseif {[string compare $cmd $reset] == 0} {
+        send "reset\r"
+    } elseif {[string compare $cmd $screen] == 0} {
+        send "megapm_switch_state.sh \r"
+    } else {
+        send "$cmd\r"
+    }
+}
+
+interact

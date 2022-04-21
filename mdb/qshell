@@ -1,0 +1,24 @@
+#!/usr/bin/expect
+
+set timeout 300
+
+spawn adb wait-for-device
+expect {
+    "?C" {exit 0}
+}
+
+spawn adb root
+spawn adb shell
+
+expect {
+"error:" {exit 0}
+"?C" { exit 0}
+"#" { 
+        send "telnet cdc-qnx\r";
+        exp_continue
+    }
+
+"login:" {send "root\r"}
+}
+
+interact
