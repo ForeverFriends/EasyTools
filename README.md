@@ -5,7 +5,7 @@
 
 | Name | Description     | Use                                                          | Author |
 | ---- | --------------- | ------------------------------------------------------------ | ------ |
-| qdb  | qnx系统简易传输工具    | qdb       | zyp |
+| mdb  | qnx系统简易传输工具    | qdb       | zyp |
 | dlt  | dlt文件转换工具 | dltconvert | gxx    |
 
 
@@ -19,7 +19,7 @@
 
 **安装方法：**
 ```shell 
-cd qdb
+cd mdb
 
 sudo install.sh
 ```
