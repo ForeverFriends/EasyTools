@@ -14,8 +14,8 @@
 
 使用 expect 完成自动push、pull等操作，免输密码，自动交互。
 **依赖项：**
-- expect (sudo apt-install expect)
-- adb (sudo apt-install adb)
+- expect (sudo apt-get install expect)
+- adb (sudo apt-get install adb)
 
 **安装方法：**
 ```shell 
@@ -76,7 +76,7 @@ qdb push ./test /data
 **依赖项：**
 
 - pyton3
-- dlt-convert (sudo apt-install dlt-tools)
+- dlt-convert (sudo apt-get install dlt-tools)
 
 **安装方法**
 
