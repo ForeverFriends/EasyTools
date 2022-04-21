@@ -5,8 +5,8 @@
 
 | Name | Description     | Use                                                          | Author |
 | ---- | --------------- | ------------------------------------------------------------ | ------ |
-| sdb  | 简易传输工具    | [sdb](https://github.com/ForeverFriends/EasyTools.git)       | unknow |
-| dlt  | dlt文件转换工具 | [dltconvert](https://github.com/ForeverFriends/EasyTools.git) | gxx    |
+| sdb  | 简易传输工具    | sdb       | unknow |
+| dlt  | dlt文件转换工具 | dltconvert | gxx    |
 
 
 
@@ -33,7 +33,7 @@ sudo python3 setup.py install
 **使用方法：**
 
 ```shell
-megadltconvert #遍历当前文件下所有文件并解析
+megadltconvert #遍历当前目录下所有文件并解析
 megadltconvert -f file/path #解析指定文件或路径下的文件
 ```
 
