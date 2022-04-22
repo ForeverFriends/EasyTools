@@ -12,6 +12,9 @@ expect {
 }
 
 spawn adb root
+expect {
+    "restarting" { sleep 4 }
+}
 spawn adb shell
 
 expect {
