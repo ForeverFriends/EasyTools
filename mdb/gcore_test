@@ -1,0 +1,46 @@
+#! /usr/bin/expect
+
+set file "/qlog/la_guestdump.gcore.gz"
+set maxsize [expr 1024*1024*1024*1]
+set count 0
+set flag 1
+
+
+
+while { $flag } {
+    set timeout 360
+    spawn adb wait-for-device
+    expect {
+	"?C" {exit 0}
+    }
+    spawn adb root
+    sleep 30
+    spawn adb shell
+    expect "#" {
+        send "ls -l $file | awk \'{print \$5}\'\r"
+    }
+    sleep 1
+    expect "#" {
+        set size [lindex $expect_out(buffer) 7]
+    }
+
+    puts "\n"
+    puts "======== $size =========="
+    puts "\n"
+
+    if { $size > $maxsize } {
+        puts "======== 12345 =========="
+        set flag 0
+        exit
+    }
+    
+    puts "count= $count"
+    set count [expr $count + 1 ]
+    puts "=======android la gcore start dump ==========="
+
+    send "echo c > /proc/sysrq-trigger\r"    
+
+    sleep 800
+}
+
+expect eof

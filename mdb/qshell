@@ -1,6 +1,7 @@
 #!/usr/bin/expect
 
 set timeout 300
+set loop 1
 
 spawn adb wait-for-device
 expect {
@@ -9,19 +10,28 @@ expect {
 
 spawn adb root
 expect {
-    "restarting" { sleep 4 }
+    "restarting" { sleep 1 }
 }
-spawn adb shell
 
-expect {
-"error:" {exit 0}
-"?C" { exit 0}
-"#" { 
-        send "telnet cdc-qnx\r";
-        exp_continue
+while {$loop} {
+    spawn adb shell
+    expect {
+        "#" {set loop 0}
+        "?C" {exit 0}
+        "error:" {sleep 1}
     }
+}
 
-"login:" {send "root\r"}
+send "telnet cdc-qnx\r";
+expect {
+    "error:" {exit 0}
+    "#" { 
+            send "telnet cdc-qnx\r";
+            exp_continue
+        }
+    "unreachable" { sleep 2; exp_continue}
+
+    "login:" {send "root\r"}
 }
 
 interact
