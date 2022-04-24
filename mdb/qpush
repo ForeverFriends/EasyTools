@@ -4,6 +4,10 @@ set timeout 3000
 
 set file_num [expr $argc-1]
 set qpath [lindex $argv $file_num]
+set permission "Permission denied"
+set no_found "no devices/emulators found"
+set ro_system "Read-only file system"
+
 
 spawn adb wait-for-device
 expect {
@@ -15,35 +19,54 @@ expect {
     "restarting" { sleep 4 }
 }
 
-for {set i 1} {$i < $argc} {incr i} {
+for {set i 1} {$i < $file_num} {incr i} {
     set path [lindex $argv $i]
-    spawn adb push $path /data
+    set loop 1
+    while {$loop} {
+        spawn adb push $path /data
+        expect {
+            "$no_found" {sleep 1}
+            "pushed" {set loop 0}
+            "error" {exit 0}
+        }
+    }
 }
 
-waitdevice
-
-spawn adb shell
+set loop 1
+while {$loop} {
+    spawn adb shell
+    expect {
+        "#" {set loop 0}
+        "?C" {exit 0}
+        "error:" {sleep 1}
+    }
+}
 
 sleep 1
-
 for {set i 1} {$i < $file_num} {incr i} {
     set path [lindex $argv $i]
     set f [file tail $path]
-    expect "#"
-    send "cp /data/$f /ota/\r"
+    send "cp -r /data/$f /ota/\r"
+
+    expect {
+        "#" {send "rm -r /data/$f \r"}
+        "$ro_system" {sleep; send "cp -r /data/$f /ota/\r"; exp_continue}
+    }
     
-    expect "#"
-    send "rm /data/$f \r"
 }
 
+expect "#"
+send "telnet cdc-qnx\r";
 expect {
-"#" {
-        send "telnet cdc-qnx\r"
-        exp_continue
-    }
-"login:" {
-        send "root\r"
-    }
+    "error:" {exit 0}
+    "#" {
+            send "telnet cdc-qnx\r";
+            exp_continue
+        }
+    "unreachable" { sleep 2; exp_continue}
+
+    "login:" {send "root\r"}
+    "Logging" {sleep 1}
 }
 
 sleep 1
@@ -51,8 +74,8 @@ sleep 1
 for {set i 1} {$i < $file_num} {incr i} {
     set path [lindex $argv $i]
     set f [file tail $path]
-    send "cp /ota/android/$f $qpath/$f\r"
-    send "rm /ota/android/$f \r"
+    send "cp -r /ota/android/$f $qpath/$f\r"
+    send "rm -r /ota/android/$f \r"
 }
 
 send "cd $qpath\r"
