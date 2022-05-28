@@ -51,7 +51,7 @@ qdb push ./test /data
  - fastboot:
  ```shell
  # QNX 系统进入fastboot模式
- qdb fastboot
+ qdb reset -f
  ```
  - screen:
  ```shell
