@@ -6,7 +6,9 @@ set screen "screen"
 
 for {set i 0} {$i < $argc} {incr i} {
     set key [lindex $argv $i]
-    append cmd " "
+    if {$i > 0} {
+        append cmd " "
+    }
     append cmd $key
 }
 
