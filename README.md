@@ -13,6 +13,7 @@
 ## qdb
 
 使用 expect 完成自动push、pull等操作，免输密码，自动交互。
+
 **依赖项：**
 - expect (sudo apt-get install expect)
 - adb (sudo apt-get install adb)
