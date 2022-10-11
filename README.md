@@ -84,6 +84,12 @@ qdb push ./test /data
 cd dlt
 sudo python3 setup.py install
 ```
+***注意*** 如果没有安装setuptools模块，请先安装。
+```
+# ubuntu
+sudo apt-get install python3-setuptools
+
+```
 
 **使用方法：**
 
