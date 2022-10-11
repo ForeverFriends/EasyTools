@@ -76,6 +76,7 @@ qdb push ./test /data
 **依赖项：**
 
 - pyton3
+- puthon3-setuptools
 - dlt-convert (sudo apt-get install dlt-tools)
 
 **安装方法**
