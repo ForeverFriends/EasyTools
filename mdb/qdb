@@ -17,6 +17,8 @@ elif [ $1 = "-h" ]; then
     echo ""
     echo "  [fastboot]: 8155 enter fastboot mode"
     echo ""
+    echo "  [mreset]: mcu reset 8155"
+    echo ""
     echo "  [log] <keywords>: enter qnx system and run \"slog2info -b keywords -w\""
     echo "      example: qdb log qvm test"
     echo "              enter qnx system and run \"slog2info -b qvm -b test -w\""

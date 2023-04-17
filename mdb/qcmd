@@ -3,6 +3,7 @@
 set fastboot "fastboot"
 set qfile "9008"
 set screen "screen"
+set mreset "mreset"
 
 for {set i 0} {$i < $argc} {incr i} {
     set key [lindex $argv $i]
@@ -55,6 +56,8 @@ expect "Logging" {
         send "enter_9008_mode.sh\r"
     } elseif {[string compare $cmd $screen] == 0} {
         send "megapm_switch_state.sh \r"
+    } elseif {[string compare $cmd $mreset] == 0} {
+        send "safely_reset.sh \r"
     } else {
         send "$cmd\r"
     }
