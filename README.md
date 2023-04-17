@@ -13,6 +13,7 @@
 ## qdb
 
 使用 expect 完成自动push、pull等操作，免输密码，自动交互。
+
 **依赖项：**
 - expect (sudo apt-get install expect)
 - adb (sudo apt-get install adb)
@@ -76,6 +77,7 @@ qdb push ./test /data
 **依赖项：**
 
 - pyton3
+- python3-setuptools
 - dlt-convert (sudo apt-get install dlt-tools)
 
 **安装方法**
@@ -83,6 +85,12 @@ qdb push ./test /data
 ```shell
 cd dlt
 sudo python3 setup.py install
+```
+***注意*** 如果没有安装setuptools模块，请先安装。
+```
+# ubuntu
+sudo apt-get install python3-setuptools
+
 ```
 
 **使用方法：**
