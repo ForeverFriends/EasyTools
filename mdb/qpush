@@ -49,8 +49,8 @@ for {set i 1} {$i < $file_num} {incr i} {
     send "cp -r /data/$f /ota/\r"
 
     expect {
-        "#" {send "rm -r /data/$f \r"}
-        "$ro_system" {sleep; send "cp -r /data/$f /ota/\r"; exp_continue}
+        "$ro_system" {send "start mount_ota \n"; send "cp -r /data/$f /ota/\n"; exp_continue}
+        "#" {send "rm -r /data/$f \n"}
     }
     
 }
@@ -60,12 +60,12 @@ send "telnet cdc-qnx\r";
 expect {
     "error:" {exit 0}
     "#" {
-            send "telnet cdc-qnx\r";
+            send "telnet cdc-qnx\n";
             exp_continue
         }
     "unreachable" { sleep 2; exp_continue}
 
-    "login:" {send "root\r"}
+    "login:" {send "root\n"}
     "Logging" {sleep 1}
 }
 
@@ -74,8 +74,7 @@ sleep 1
 for {set i 1} {$i < $file_num} {incr i} {
     set path [lindex $argv $i]
     set f [file tail $path]
-    send "cp -r /ota/android/$f $qpath/$f\r"
-    send "rm -r /ota/android/$f \r"
+    send "cp -r /ota/android/$f $qpath\r"
 }
 
 send "cd $qpath\r"
