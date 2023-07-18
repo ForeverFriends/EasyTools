@@ -5,12 +5,13 @@
 
 | Name | Description     | Use                                                          | Author |
 | ---- | --------------- | ------------------------------------------------------------ | ------ |
-| mdb  | qnx系统简易传输工具    | qdb       | zyp |
+| mdb  | qnx系统简易传输工具    | qdb (expect)      | Jample |
+| qdb  | qnx 系统简易传输工具   | qdb (python)      | Jample |
 | dlt  | dlt文件转换工具 | dltconvert | gxx    |
 
 
 
-## qdb
+## mdb
 
 使用 expect 完成自动push、pull等操作，免输密码，自动交互。
 
@@ -69,6 +70,42 @@ qdb push ./test /data
  # QNX 系统下执行指定命令
  qdb ls
  ```
+
+## qdb 
+
+
+**依赖项：**
+
+- pyton3
+- python3-setuptools
+- dlt-convert (sudo apt-get install dlt-tools)
+- click
+- pexcpect
+
+**安装方法**
+
+```shell
+cd qdb
+sudo python3 setup.py install
+```
+
+**添加命令自动补全**
+
+开启 Bash 补全功能，你需要将下列命令放入到 .bashrc 文件中
+```shell
+# ~/.bashrc
+eval "$(_QDB_COMPLETE=source qdb)"
+```
+
+使用方法：
+```shell
+qdb <tab><tab>
+push                    9008                    disable_mini_dump       disable_secpolgenerate  
+pull                    enable_full_dump        enable_gcore            log                     
+reset                   disable_full_dump       disable_gcore           ota                     
+fastboot                enable_mini_dump        enable_secpolgenerate   safe_reset 
+```
+
 
 ## dltconvert
 
