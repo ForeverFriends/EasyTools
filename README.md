@@ -86,7 +86,7 @@ qdb push ./test /data
 
 ```shell
 cd qdb
-sudo python3 setup.py install
+install.sh
 ```
 
 **添加命令自动补全**
