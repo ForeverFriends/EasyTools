@@ -1,7 +1,7 @@
 from setuptools import setup
 setup(
     name='megaqdb',
-    version='1.0',
+    version='1.1',
     packages = ['megaqdb'],
     install_requires=[
         'Click',

@@ -8,7 +8,12 @@ import os
 import pexpect
 import sys
 import time
+import subprocess
 
+NFS_PATH = "/qlog/"
+NFS_PATH_QNX = "/log/qlog/"
+USER = "root"
+PASSWORD = "root"
 
 def wait_device():
     expect_list = [
@@ -31,7 +36,6 @@ def root():
         pexpect.TIMEOUT,
     ]
     process = pexpect.spawn("adb root",[], 100)
-    #print(f'adb root return {process.before}')
     index = process.expect(expect_list)
     #print(f'root 匹配到: {index} => {expect_list[index]}')
     if index == 1:
@@ -44,6 +48,23 @@ def root():
         print("root error {expect_list[index]}")
         exit(0)
 
+def remount():
+    expect_list = [
+        'no devices/emulators found',
+        pexpect.EOF,
+        pexpect.TIMEOUT,
+    ]
+    process = pexpect.spawn("adb remount",[], 100)
+    index = process.expect(expect_list)
+    if index == 1:
+        return 1
+    elif index == 0:
+        time.sleep(1)
+        print("no devices, loop root")
+        return root()
+    else:
+        print("root error {expect_list[index]}")
+        exit(0)
 def enter_android():
     expect_list = [
         '#',
@@ -51,12 +72,11 @@ def enter_android():
         pexpect.EOF,
         pexpect.TIMEOUT,
     ]
-    process = pexpect.spawn("adb shell", [], 10)
+    process = pexpect.spawn("adb shell", [], 1000)
     #print(f'adb shell return {process.before}')
     index = process.expect(expect_list)
     #print(f'enter 匹配到: {index} => {expect_list[index]}')
     if index == 0:
-        process.sendline()
         return process
     elif index == 1:
         print('no devices/emulators found')
@@ -65,6 +85,73 @@ def enter_android():
     else:
         print("enter error {expect_list[index]}")
     return 
+
+def get_qnx_ip():
+    qnx_ip = "192.168.1.1"
+    hosts_content = subprocess.check_output(['adb', 'shell', 'cat', '/etc/hosts']).decode('utf-8')
+    lines = hosts_content.split('\n')
+    for line in lines:
+        if "cdc-qnx" in line:
+            parts = line.split()
+            if parts:
+                qnx_ip = parts[0]
+    return qnx_ip
+
+######## get_qnx_ip ######
+
+
+
+def enter_android_qnx(interact = True):
+    expect_list = [
+        '#',
+        'no devices/emulators found',
+        pexpect.EOF,
+        pexpect.TIMEOUT,
+    ]
+    expect_list2 = [
+        'login',
+        'Network is unreachable',
+        'Logging',
+        'No address associated with hostname',
+        '#',
+        pexpect.EOF,
+        pexpect.TIMEOUT,
+    ]
+    key = 0
+    process = pexpect.spawn("adb shell", [], 10)
+    index = process.expect(expect_list)
+    if index == 0:
+        process.sendline("telnet cdc-qnx")
+        while 1 :
+            index = process.expect(expect_list2)
+            if index == 0:
+                if key == 0:
+                    process.sendline("root")
+                    key = 1
+            elif index == 1:
+                time.sleep(1)
+                process.sendline("telnet cdc-qnx")
+                continue
+            elif index == 2:
+                if interact :
+                    process.interact()
+                else:
+                    return process
+            elif index == 3:
+                process.sendline("telnet 192.168.1.1")
+                continue
+            elif index == 4:
+                process.sendline("telnet cdc-qnx")
+                continue
+            else:
+                return process
+    elif index == 1:
+        print('no devices/emulators found')
+        time.sleep(1)
+        return enter_android_qnx()
+    else:
+        print("enter error {expect_list[index]}")
+    return process
 
 def enter_qnx_nocheck(process):
     expect_list = [
@@ -96,12 +183,15 @@ def enter_qnx(process):
         pexpect.EOF,
         pexpect.TIMEOUT,
     ]
-    process.sendline("telnet cdc-qnx")
+    key = 0
+    cmd_lin = "telnet %s"%(get_qnx_ip())
+    process.sendline(cmd_lin)
     while 1 :
         index = process.expect(expect_list)
         if index == 0:
-            process.sendline("root")
-            continue;
+            if key == 0:
+                process.sendline("root")
+                key = 1
         elif index == 1:
             return enter_qnx(process)
         elif index == 2:
@@ -121,6 +211,7 @@ def push_android(files):
 def push(files, path):
     wait_device()
     root()
+    remount()
     push_android(files)
     push_qnx(files, path)
 
@@ -131,11 +222,11 @@ def push_qnx(files, path):
     if process != None:
         process.sendline('start mount_ota')
         for file in files:
-            cmd_line = "mv /data/%s /ota/"%file
+            cmd_line = "mv /data/%s %s"%(os.path.basename(file), NFS_PATH)
             process.sendline(cmd_line)
         enter_qnx(process)
         for file in files:
-            cmd_line = "mv /ota/android/%s %s"%(file, path)
+            cmd_line = "mv %s%s %s"%(NFS_PATH_QNX, os.path.basename(file), path)
             process.sendline(cmd_line)
         process.interact()
     return
@@ -152,6 +243,8 @@ def qsh(interact = True):
                     process.interact()
                 else:
                     return process
+            #  return enter_android_qnx(interact)
+    return None
 ### qsh()
 
 def exec_cmd(cmd, interact = True):
@@ -175,13 +268,13 @@ def pull(files, path):
     # mv files to /ota/androd
     for file in files:
         files_no_path.append(os.path.basename(file))
-        cmd_line = "cp %s /ota/android"%file
+        cmd_line = "cp %s %s"%(file, NFS_PATH)
         process.sendline(cmd_line)
     # move files to /data/
     process.sendline("exit")
-    process.sendline("start mount_ota")
+    process.sendline("start mount_qlog")
     for file in files_no_path:
-        cmd_line = "mv /ota/%s /data"%file
+        cmd_line = "mv %s%s /data"%(NFS_PATH, file)
         process.sendline(cmd_line)
 
     process.sendline("exit")
@@ -217,6 +310,14 @@ def ota(pkg):
     process.interact()
 
 #### ota()
+
+def exec_qnx_cmd(args):
+    cmd_line = ""
+    for arg in args:
+        cmd_line+=arg
+    exec_cmd(cmd_line)
+
+### exec_qnx_cmd
 
 commands = [
         'push', 
@@ -280,6 +381,7 @@ def main(cmd, args):
         pass
     elif cmd == commands[11]:           # enable secpolgenerate
         process = exec_cmd("touch /var/enable_mini_rawdump", False)
+        # process = exec_cmd("echo 0 > /dev/pdbg/memorydump/trace_status", False)
         process.sendline("reset")
     elif cmd == commands[12]:           # disable secpolgenerate
         process = exec_cmd("rm /var/enable_mini_rawdump", False)
@@ -290,6 +392,8 @@ def main(cmd, args):
         ota(args)
     elif cmd == commands[15]:           # mcu reset soc
         exec_cmd("safely_reset.sh")
+    else:
+        exec_qnx_cmd(args)
 
 ### main()
 
