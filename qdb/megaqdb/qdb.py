@@ -15,6 +15,8 @@ NFS_PATH_QNX = "/log/qlog/"
 USER = "root"
 PASSWORD = "root"
 
+tel_retry = 0
+
 def wait_device():
     expect_list = [
         'error: no devices/emulators found',
@@ -118,11 +120,14 @@ def enter_android_qnx(interact = True):
         pexpect.TIMEOUT,
     ]
     key = 0
+    retry = 0
     process = pexpect.spawn("adb shell", [], 10)
     index = process.expect(expect_list)
     if index == 0:
         process.sendline("telnet cdc-qnx")
         while 1 :
+            if retry > 10:
+                break
             index = process.expect(expect_list2)
             if index == 0:
                 if key == 0:
@@ -130,7 +135,9 @@ def enter_android_qnx(interact = True):
                     key = 1
             elif index == 1:
                 time.sleep(1)
+                print('Network is unreachable')
                 process.sendline("telnet cdc-qnx")
+                retry += 1
                 continue
             elif index == 2:
                 if interact :
@@ -139,9 +146,11 @@ def enter_android_qnx(interact = True):
                     return process
             elif index == 3:
                 process.sendline("telnet 192.168.1.1")
+                retry += 1
                 continue
             elif index == 4:
                 process.sendline("telnet cdc-qnx")
+                retry += 1
                 continue
             else:
                 return process
@@ -176,6 +185,8 @@ def enter_qnx_nocheck(process):
         print(f'telnet error {expect_list[index]}')
 
 def enter_qnx(process):
+    global tel_retry
+    tel_retry += 1
     expect_list = [
         'login',
         'Network is unreachable',
@@ -193,12 +204,19 @@ def enter_qnx(process):
                 process.sendline("root")
                 key = 1
         elif index == 1:
+            if tel_retry > 10:
+                tel_retry = 0
+                return -1
+            print('Network is unreachable')
             return enter_qnx(process)
         elif index == 2:
-            return 0;
+            break
         else:
             print(f'telnet error {expect_list[index]}')
-            return -1
+            break
+
+    tel_retry = 0
+    return
 
 def push_android(files):
     for file in files:
@@ -208,6 +226,14 @@ def push_android(files):
 
 ### push_android()
 
+def push_by_curl(files, path):
+    wait_device()
+    root()
+    remount()
+    push_android(files)
+    # push_qnx(files, path)
+    curl_to_qnx(files, path)
+
 def push(files, path):
     wait_device()
     root()
@@ -215,12 +241,37 @@ def push(files, path):
     push_android(files)
     push_qnx(files, path)
 
+
 ### push()
+
+def curl_to_qnx(files, path):
+    process = enter_android()
+    if process != None:
+        process.timeout = 10
+        for file in files:
+            cmd_line = "curl ftp://%s/%s/ -u root:root -T /data/%s "%(get_qnx_ip(), path, os.path.basename(file))
+            print(cmd_line)
+            process.sendline(cmd_line)
+            index = process.expect([pexpect.EOF, pexpect.TIMEOUT, "#"])
+
+            # 根据匹配的情况获取结果
+            if index == 2:  
+                result = process.before.decode('utf-8')
+                print("========== Sending..... ==========")
+                print(result)
+                print("============== End ==============")
+            else:  # 如果是TIMEOUT
+                print("Timed out waiting for command to finish.")
+        enter_qnx(process)
+        process.interact()
+    return
+### curl_to_qnx()
 
 def push_qnx(files, path):
     process = enter_android()
     if process != None:
-        process.sendline('start mount_ota')
+        process.sendline('start mount_qlog')
+        time.sleep(1)
         for file in files:
             cmd_line = "mv /data/%s %s"%(os.path.basename(file), NFS_PATH)
             process.sendline(cmd_line)
@@ -286,6 +337,37 @@ def pull(files, path):
 
 ### pull()
 
+def pull_by_curl(files, path):
+    files_no_path = []
+    process = enter_android()
+    process.sendline("cd /data/")
+    process.expect([pexpect.EOF, pexpect.TIMEOUT, "#"])
+    if process != None:
+        process.timeout = 10
+        for file in files:
+            files_no_path.append(os.path.basename(file))
+            cmd_line = "curl ftp://%s/%s -u root:root -O "%(get_qnx_ip(), file)
+            print(cmd_line)
+            process.sendline(cmd_line)
+            index = process.expect([pexpect.EOF, pexpect.TIMEOUT, "#"])
+
+            # 根据匹配的情况获取结果
+            if index == 2:  
+                result = process.before.decode('utf-8')
+                print("========== Sending..... ==========")
+                print(result)
+                print("============== End ==============")
+            else:  # 如果是TIMEOUT
+                print("Timed out waiting for command to finish.")
+
+    for file in files_no_path:
+        cmd_line = "adb pull /data/%s %s"%(file, path)
+        (command_output, exitstatus) = pexpect.run(cmd_line, withexitstatus=1)
+        print(command_output.strip().decode('UTF-8'))
+    return
+
+### pull_by_curl()
+
 def show_log(keys):
     cmd_line = "slog2info "
     for key in keys:
@@ -311,8 +393,8 @@ def ota(pkg):
 
 #### ota()
 
-def exec_qnx_cmd(args):
-    cmd_line = ""
+def exec_qnx_cmd(cmd, args):
+    cmd_line = "%s "%cmd 
     for arg in args:
         cmd_line+=arg
     exec_cmd(cmd_line)
@@ -335,7 +417,9 @@ commands = [
         'disable_secpolgenerate',
         'log',
         'ota',
-        'safe_reset'
+        'safe_reset',
+        'curl_push', 
+        'curl_pull'
         ]
 
 def get_env_vars(ctx, args, incomplete):
@@ -343,7 +427,7 @@ def get_env_vars(ctx, args, incomplete):
 
 def get_file(ctx, args, incomplete):
     obj = []
-    if args[0] == "ota" or args[0] == "push":
+    if args[0] == "ota" or args[0] == "push" or args[0] == "curl_push":
         for root, dirs, files in os.walk(".", topdown=False):
             for name in files:
                 obj.append(os.path.join(root, name))
@@ -392,8 +476,12 @@ def main(cmd, args):
         ota(args)
     elif cmd == commands[15]:           # mcu reset soc
         exec_cmd("safely_reset.sh")
+    elif cmd == commands[16]:           # curl_push
+        push_by_curl(args[0:-1], args[-1])
+    elif cmd == commands[17]:           # curl_pull
+        pull_by_curl(args[0:-1], args[-1])
     else:
-        exec_qnx_cmd(args)
+        exec_qnx_cmd(cmd, args)
 
 ### main()
 
