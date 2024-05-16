@@ -251,13 +251,13 @@ def curl_to_qnx(files, path):
         for file in files:
             cmd_line = "curl ftp://%s/%s/ -u root:root -T /data/%s "%(get_qnx_ip(), path, os.path.basename(file))
             print(cmd_line)
+            print("========== Sending..... ==========")
             process.sendline(cmd_line)
             index = process.expect([pexpect.EOF, pexpect.TIMEOUT, "#"])
 
             # 根据匹配的情况获取结果
             if index == 2:  
                 result = process.before.decode('utf-8')
-                print("========== Sending..... ==========")
                 print(result)
                 print("============== End ==============")
             else:  # 如果是TIMEOUT
@@ -271,14 +271,24 @@ def push_qnx(files, path):
     process = enter_android()
     if process != None:
         process.sendline('start mount_qlog')
+        process.expect([pexpect.EOF, pexpect.TIMEOUT, "#"])
         time.sleep(1)
         for file in files:
-            cmd_line = "mv /data/%s %s"%(os.path.basename(file), NFS_PATH)
+            cmd_line = "mv -f /data/%s %s"%(os.path.basename(file), NFS_PATH)
             process.sendline(cmd_line)
+            index = process.expect([pexpect.EOF, pexpect.TIMEOUT, "#", "No such file or directory"])
+            if index == 3:
+                print("some errors occur when push to qnx....")
+                exit(1)
+
+            process.sendline("sync")
         enter_qnx(process)
         for file in files:
-            cmd_line = "mv %s%s %s"%(NFS_PATH_QNX, os.path.basename(file), path)
+            cmd_line = "mv -f %s%s %s"%(NFS_PATH_QNX, os.path.basename(file), path)
             process.sendline(cmd_line)
+            process.expect([pexpect.EOF, pexpect.TIMEOUT, "#"])
+            result = process.before.decode('utf-8')
+            print(result)
         process.interact()
     return
 ### push_qnx()
