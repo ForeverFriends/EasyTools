@@ -79,6 +79,8 @@ def enter_android():
     index = process.expect(expect_list)
     #print(f'enter 匹配到: {index} => {expect_list[index]}')
     if index == 0:
+        process.sendline("setenforce 0 \n")
+        process.expect(expect_list)
         return process
     elif index == 1:
         print('no devices/emulators found')
@@ -86,7 +88,7 @@ def enter_android():
         return enter_android()
     else:
         print("enter error {expect_list[index]}")
-    return 
+    return
 
 def get_qnx_ip():
     qnx_ip = "192.168.1.1"
@@ -220,9 +222,12 @@ def enter_qnx(process):
 
 def push_android(files):
     for file in files:
-        cmd_line = "adb push %s /data"%(file)
+        cmd_line = "adb shell start mount_qlog"
+        pexpect.run(cmd_line, withexitstatus=1)
+        cmd_line = "adb push %s /qlog"%(file)
         (command_output, exitstatus) = pexpect.run(cmd_line, withexitstatus=1)
         print(command_output.strip().decode('UTF-8'))
+        time.sleep(2)
 
 ### push_android()
 
@@ -234,18 +239,25 @@ def push_by_curl(files, path):
     # push_qnx(files, path)
     curl_to_qnx(files, path)
 
-def push(files, path):
+def push(files):
     wait_device()
     root()
     remount()
     push_android(files)
-    push_qnx(files, path)
+    # push_qnx(files, path)
+    process = qsh(False)
+    if process != None:
+        process.sendline('cd /log/qlog')
+        cmd_line = "ls -al /log/qlog/%s"%(files)
+        process.sendline(cmd_line)
+        process.interact()
 
 
 ### push()
 
 def curl_to_qnx(files, path):
     process = enter_android()
+    process.expect("#")
     if process != None:
         process.timeout = 10
         for file in files:
@@ -253,13 +265,23 @@ def curl_to_qnx(files, path):
             print(cmd_line)
             print("========== Sending..... ==========")
             process.sendline(cmd_line)
-            index = process.expect([pexpect.EOF, pexpect.TIMEOUT, "#"])
-
+            index = process.expect(["#", "curl"])
             # 根据匹配的情况获取结果
-            if index == 2:  
+            if index == 0:
+                bef = process.before.decode('utf-8')
+                print(bef)
+                process.expect("#")
+                bef = process.before.decode('utf-8')
+                print(bef)
+                print("============== End ==============")
+            if index == 1:
                 result = process.before.decode('utf-8')
                 print(result)
-                print("============== End ==============")
+                process.expect("#")
+                result = process.before.decode('utf-8')
+                print(result)
+                print("========== Send error ==========")
+                return
             else:  # 如果是TIMEOUT
                 print("Timed out waiting for command to finish.")
         enter_qnx(process)
@@ -389,8 +411,8 @@ def show_log(keys):
 
 def ota(pkg):
     wait_device()
-    cmd_line = "adb push %s /data/ota.zip"%(pkg)
-    (command_output, exitstatus) = pexpect.run(cmd_line, withexitstatus=1)
+    cmd_line = "adb push %s /data/ota_package/ota.zip"%(pkg)
+    (command_output, exitstatus) = pexpect.run(cmd_line, withexitstatus=1, timeout=1800)
     print(command_output.strip().decode('UTF-8'))
     process = enter_android()
     if process == None:
@@ -452,7 +474,7 @@ def main(cmd, args):
     if cmd == 'qsh':
         qsh()
     elif cmd == commands[0]:            # push
-        push(args[0:-1], args[-1])
+        push(args)
     elif cmd == commands[1]:            # pull
         pull(args[0:-1], args[-1])
     elif cmd == commands[2]:            # reset
