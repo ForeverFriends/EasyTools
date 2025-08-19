@@ -5,7 +5,7 @@
 
 | Name | Description     | Use                                                          | Author |
 | ---- | --------------- | ------------------------------------------------------------ | ------ |
-| mdb  | qnx系统简易传输工具    | qdb (expect)      | Jample |
+| mdb  | yocto系统简易传输工具    | qdb (python)      | Jample |
 | qdb  | qnx 系统简易传输工具   | qdb (python)      | Jample |
 | dlt  | dlt文件转换工具 | dltconvert | gxx    |
 
