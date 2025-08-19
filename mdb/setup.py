@@ -2,10 +2,10 @@ from setuptools import setup
 setup(
     name='mdb',
     version='1.0.1',
-    packages = ['ydb'],
+    packages = ['mdb'],
     entry_points='''
         [console_scripts]
-        mdb=ydb.ydb:main
+        mdb=mdb.mdb:main
     ''',
 )
 
