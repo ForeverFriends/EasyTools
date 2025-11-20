@@ -211,6 +211,7 @@ def execute_push(target_device, local_path, remote_path):
     if not os.path.exists(local_path):
         print("❌ 本地文件不存在: {}".format(local_path))
         sys.exit(1)
+    run_command(["adb", "-s", target_device, "shell", "mount", "-o", "remount,rw", "/"])
     print("📤 正在 push 文件: {} → {}".format(local_path, remote_path))
     cmd = ["adb", "-s", target_device, "push", local_path, remote_path]
     result = run_command(cmd)
