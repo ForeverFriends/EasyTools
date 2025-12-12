@@ -468,8 +468,18 @@ def get_file(ctx, args, incomplete):
     return [k for k in obj if incomplete in k]
 
 @click.command()
-@click.argument("cmd", type=click.STRING, default="qsh", autocompletion=get_env_vars)
-@click.argument("args", nargs = -1, autocompletion=get_file)
+@click.argument(
+    "cmd",
+    type=click.STRING,
+    default="qsh",
+    shell_complete=get_env_vars  # 替换 autocompletion
+)
+@click.argument(
+    "args",
+    nargs=-1,
+    shell_complete=get_file  # 替换 autocompletion
+)
+
 def main(cmd, args):
     if cmd == 'qsh':
         qsh()
